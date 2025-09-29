@@ -986,4 +986,9 @@ if __name__ == '__main__':
     print("⏹️  按 Ctrl+C 停止應用程式")
     print("=" * 60)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # 支援 Heroku 部署
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
