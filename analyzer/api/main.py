@@ -605,5 +605,6 @@ def api_wordcloud():
 def handler(request):
     return app(request.environ, lambda *args: None)
 
+# 導出處理器供 Vercel 使用
 if __name__ == '__main__':
     app.run(debug=True)

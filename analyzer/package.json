@@ -1,0 +1,11 @@
+{
+  "name": "chinese-news-crawler",
+  "version": "1.0.0",
+  "description": "Chinese News Crawler and Topic Analysis System",
+  "scripts": {
+    "build": "echo 'No build step required for Python'"
+  },
+  "engines": {
+    "python": "3.9"
+  }
+}
