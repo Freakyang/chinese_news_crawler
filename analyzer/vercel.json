@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "api/main.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9"
+      }
     }
   ],
   "routes": [
@@ -18,5 +21,10 @@
   ],
   "env": {
     "PYTHONPATH": "."
+  },
+  "functions": {
+    "api/main.py": {
+      "maxDuration": 30
+    }
   }
 }
