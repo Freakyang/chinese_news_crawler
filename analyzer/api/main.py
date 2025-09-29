@@ -1,17 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import os
-import sys
 from flask import Flask, render_template_string, request, jsonify
-import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 
-# 添加當前目錄到 Python 路徑
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 app = Flask(__name__)
+
+# 全域變數儲存新聞資料
+news_data = []
 
 # 簡化的爬蟲功能
 def crawl_news(keyword):
@@ -62,15 +56,12 @@ def crawl_news(keyword):
         }
     ]
     
-    # 儲存到記憶體中的模擬資料庫
+    # 更新全域變數
     global news_data
     news_data = mock_news
     
     print(f"✅ 成功儲存 {len(mock_news)} 篇新聞")
     return len(mock_news)
-
-# 全域變數儲存新聞資料
-news_data = []
 
 # HTML 模板
 HTML_TEMPLATE = '''
@@ -614,6 +605,5 @@ def api_wordcloud():
 def handler(request):
     return app(request.environ, lambda *args: None)
 
-# 導出處理器供 Vercel 使用
 if __name__ == '__main__':
     app.run(debug=True)
