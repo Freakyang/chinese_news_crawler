@@ -6,12 +6,7 @@ import sys
 from flask import Flask, render_template_string, request, jsonify
 import sqlite3
 from datetime import datetime, timedelta
-import requests
-import re
-from urllib.parse import urljoin, urlparse
-from bs4 import BeautifulSoup
-import time
-import random
+import json
 
 # 添加當前目錄到 Python 路徑
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -67,49 +62,15 @@ def crawl_news(keyword):
         }
     ]
     
-    # 儲存到資料庫
-    conn = sqlite3.connect('/tmp/news.db')
-    cursor = conn.cursor()
+    # 儲存到記憶體中的模擬資料庫
+    global news_data
+    news_data = mock_news
     
-    # 創建表
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS news_article (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            content TEXT,
-            source TEXT,
-            url TEXT UNIQUE,
-            publish_date TEXT,
-            topic TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # 清除舊資料
-    cursor.execute('DELETE FROM news_article')
-    
-    for news in mock_news:
-        try:
-            cursor.execute('''
-                INSERT OR REPLACE INTO news_article 
-                (title, content, source, url, publish_date, topic)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
-                news['title'],
-                news['content'],
-                news['source'],
-                news['url'],
-                news['publish_date'],
-                news['topic']
-            ))
-        except Exception as e:
-            print(f"❌ 儲存新聞失敗: {e}")
-    
-    conn.commit()
-    conn.close()
-    
-    print(f"✅ 成功儲存 {len(mock_news)} 篇新聞到資料庫")
+    print(f"✅ 成功儲存 {len(mock_news)} 篇新聞")
     return len(mock_news)
+
+# 全域變數儲存新聞資料
+news_data = []
 
 # HTML 模板
 HTML_TEMPLATE = '''
@@ -601,29 +562,7 @@ def api_crawl():
 @app.route('/api/news')
 def api_news():
     try:
-        conn = sqlite3.connect('/tmp/news.db')
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT title, content, source, url, publish_date, topic
-            FROM news_article
-            ORDER BY created_at DESC
-            LIMIT 20
-        ''')
-        
-        news = []
-        for row in cursor.fetchall():
-            news.append({
-                'title': row[0],
-                'content': row[1],
-                'source': row[2],
-                'url': row[3],
-                'publish_date': row[4],
-                'topic': row[5]
-            })
-        
-        conn.close()
-        return jsonify({'news': news})
+        return jsonify({'news': news_data})
     except Exception as e:
         print(f"❌ 載入新聞失敗: {e}")
         return jsonify({'news': []})
@@ -631,24 +570,14 @@ def api_news():
 @app.route('/api/stats')
 def api_stats():
     try:
-        conn = sqlite3.connect('/tmp/news.db')
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT COUNT(*) FROM news_article')
-        total_news = cursor.fetchone()[0]
-        
-        cursor.execute('SELECT COUNT(DISTINCT topic) FROM news_article')
-        total_topics = cursor.fetchone()[0]
-        
-        cursor.execute('SELECT COUNT(DISTINCT source) FROM news_article')
-        total_sources = cursor.fetchone()[0]
-        
-        conn.close()
+        total_news = len(news_data)
+        topics = set(news['topic'] for news in news_data)
+        sources = set(news['source'] for news in news_data)
         
         return jsonify({
             'total_news': total_news,
-            'total_topics': total_topics,
-            'total_sources': total_sources
+            'total_topics': len(topics),
+            'total_sources': len(sources)
         })
     except Exception as e:
         print(f"❌ 載入統計失敗: {e}")
@@ -661,13 +590,11 @@ def api_stats():
 @app.route('/api/topics')
 def api_topics():
     try:
-        conn = sqlite3.connect('/tmp/news.db')
-        cursor = conn.cursor()
+        topics = {}
+        for news in news_data:
+            topic = news.get('topic', '未分類')
+            topics[topic] = topics.get(topic, 0) + 1
         
-        cursor.execute('SELECT topic, COUNT(*) FROM news_article GROUP BY topic')
-        topics = dict(cursor.fetchall())
-        
-        conn.close()
         return jsonify({'topics': topics, 'keywords': []})
     except Exception as e:
         print(f"❌ 主題分析失敗: {e}")
@@ -687,5 +614,6 @@ def api_wordcloud():
 def handler(request):
     return app(request.environ, lambda *args: None)
 
+# 導出處理器供 Vercel 使用
 if __name__ == '__main__':
     app.run(debug=True)

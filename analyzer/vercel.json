@@ -11,20 +11,11 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/main.py"
-    },
-    {
       "src": "/(.*)",
       "dest": "/api/main.py"
     }
   ],
   "env": {
     "PYTHONPATH": "."
-  },
-  "functions": {
-    "api/main.py": {
-      "maxDuration": 30
-    }
   }
 }
