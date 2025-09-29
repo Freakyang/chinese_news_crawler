@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中文新聞爬蟲與主題分析系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #2c3e50 !important;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border-radius: 0.5rem;
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .loading {
+            display: none;
+        }
+        .wordcloud-container {
+            text-align: center;
+            padding: 20px;
+        }
+        .wordcloud-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+        .topic-item {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .topic-item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+        .news-item {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+        .news-item:hover {
+            background-color: #f8f9fa;
+        }
+        .source-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .date-picker {
+            max-width: 200px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- 導航欄 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-newspaper me-2"></i>
+                中文新聞爬蟲與主題分析系統
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-calendar me-1"></i>
+                    <span id="current-date"></span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 控制面板 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-cog me-2"></i>爬蟲設定
+                    </div>
+                    <div class="card-body">
+                        <form id="crawl-form">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="start-date" class="form-label">開始日期</label>
+                                    <input type="date" class="form-control date-picker" id="start-date" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="end-date" class="form-label">結束日期</label>
+                                    <input type="date" class="form-control date-picker" id="end-date" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="topics" class="form-label">主題關鍵詞（用逗號分隔）</label>
+                                    <input type="text" class="form-control" id="topics" 
+                                           placeholder="例如：政治,經濟,科技,體育">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-play me-1"></i>開始爬取
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 統計資訊 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-newspaper fa-2x mb-2"></i>
+                        <div class="stats-number" id="total-articles">0</div>
+                        <div>總文章數</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tags fa-2x mb-2"></i>
+                        <div class="stats-number" id="total-topics">0</div>
+                        <div>主題數量</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-globe fa-2x mb-2"></i>
+                        <div class="stats-number" id="total-sources">0</div>
+                        <div>新聞來源</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-fire fa-2x mb-2"></i>
+                        <div class="stats-number" id="hot-topic">-</div>
+                        <div>最熱門主題</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要內容區域 -->
+        <div class="row">
+            <!-- 左側：主題列表 -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-list me-2"></i>主題列表</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshTopics()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                        <div id="topics-list">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-spinner fa-spin"></i> 載入中...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：文字雲和新聞列表 -->
+            <div class="col-md-8">
+                <!-- 文字雲 -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-cloud me-2"></i>主題文字雲</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshWordcloud()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="wordcloud-container" id="wordcloud-container">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-image fa-3x mb-3"></i>
+                                <p>選擇主題以查看文字雲</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新聞列表 -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-newspaper me-2"></i>新聞列表</span>
+                        <div>
+                            <select class="form-select form-select-sm me-2" id="source-filter" style="width: auto; display: inline-block;">
+                                <option value="">所有來源</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshNews()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div id="news-list">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-spinner fa-spin"></i> 載入中...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入動畫 -->
+    <div class="loading position-fixed top-50 start-50 translate-middle">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+                <h5>正在處理中...</h5>
+                <p class="text-muted">請稍候，這可能需要幾分鐘時間</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentTopic = null;
+        let currentPage = 1;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 設定預設日期
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            document.getElementById('start-date').value = yesterday.toISOString().split('T')[0];
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('current-date').textContent = today.toLocaleDateString('zh-TW');
+            
+            // 載入初始資料
+            loadStats();
+            loadTopics();
+            loadNews();
+        });
+
+        // 爬蟲表單提交
+        document.getElementById('crawl-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const topics = document.getElementById('topics').value.split(',').map(t => t.trim()).filter(t => t);
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('開始日期不能晚於結束日期');
+                return;
+            }
+            
+            startCrawling(startDate, endDate, topics);
+        });
+
+        // 開始爬取
+        function startCrawling(startDate, endDate, topics) {
+            showLoading(true);
+            
+            fetch('/api/crawl', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    start_date: startDate,
+                    end_date: endDate,
+                    topics: topics
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.status === 'started') {
+                    alert('爬取任務已開始，請稍後重新整理頁面查看結果');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 5000);
+                } else {
+                    alert('爬取任務啟動失敗：' + data.message);
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                console.error('Error:', error);
+                alert('爬取過程中發生錯誤');
+            });
+        }
+
+        // 載入統計資訊
+        function loadStats() {
+            fetch('/api/news?per_page=1')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-articles').textContent = data.total || 0;
+            })
+            .catch(error => console.error('Error loading stats:', error));
+            
+            fetch('/api/topics')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-topics').textContent = data.length;
+                if (data.length > 0) {
+                    const topTopic = data.reduce((max, topic) => topic.count > max.count ? topic : max, data[0]);
+                    document.getElementById('hot-topic').textContent = topTopic.name;
+                }
+            })
+            .catch(error => console.error('Error loading topics:', error));
+        }
+
+        // 載入主題列表
+        function loadTopics() {
+            fetch('/api/topics')
+            .then(response => response.json())
+            .then(data => {
+                const topicsList = document.getElementById('topics-list');
+                if (data.length === 0) {
+                    topicsList.innerHTML = '<div class="text-center text-muted">暫無主題資料</div>';
+                    return;
+                }
+                
+                topicsList.innerHTML = data.map(topic => `
+                    <div class="topic-item p-3 border-bottom" onclick="selectTopic('${topic.name}')">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${topic.name}</h6>
+                                <small class="text-muted">${topic.count} 篇文章</small>
+                            </div>
+                            <span class="badge bg-primary">${topic.count}</span>
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading topics:', error);
+                document.getElementById('topics-list').innerHTML = '<div class="text-center text-danger">載入失敗</div>';
+            });
+        }
+
+        // 選擇主題
+        function selectTopic(topicName) {
+            currentTopic = topicName;
+            
+            // 更新選中的主題樣式
+            document.querySelectorAll('.topic-item').forEach(item => {
+                item.classList.remove('bg-primary', 'text-white');
+            });
+            event.currentTarget.classList.add('bg-primary', 'text-white');
+            
+            // 載入該主題的文字雲
+            loadWordcloud(topicName);
+            
+            // 載入該主題的新聞
+            loadNews(topicName);
+        }
+
+        // 載入文字雲
+        function loadWordcloud(topic = null) {
+            const container = document.getElementById('wordcloud-container');
+            container.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> 生成文字雲中...</div>';
+            
+            let url = '/api/wordcloud';
+            if (topic) {
+                url += `?topic=${encodeURIComponent(topic)}`;
+            }
+            
+            fetch(url)
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('生成文字雲失敗');
+            })
+            .then(blob => {
+                const imageUrl = URL.createObjectURL(blob);
+                container.innerHTML = `<img src="${imageUrl}" alt="文字雲" class="img-fluid">`;
+            })
+            .catch(error => {
+                console.error('Error loading wordcloud:', error);
+                container.innerHTML = '<div class="text-center text-danger">文字雲生成失敗</div>';
+            });
+        }
+
+        // 載入新聞列表
+        function loadNews(topic = null) {
+            const newsList = document.getElementById('news-list');
+            newsList.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> 載入中...</div>';
+            
+            let url = '/api/news?per_page=20';
+            if (topic) {
+                url += `&topic=${encodeURIComponent(topic)}`;
+            }
+            
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.articles.length === 0) {
+                    newsList.innerHTML = '<div class="text-center text-muted">暫無新聞資料</div>';
+                    return;
+                }
+                
+                newsList.innerHTML = data.articles.map(article => `
+                    <div class="news-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-1 flex-grow-1">
+                                <a href="${article.url}" target="_blank" class="text-decoration-none">
+                                    ${article.title}
+                                </a>
+                            </h6>
+                            <span class="badge source-badge bg-secondary">${article.source}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                ${new Date(article.publish_date).toLocaleDateString('zh-TW')}
+                            </small>
+                            ${article.topic ? `<span class="badge bg-info">${article.topic}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading news:', error);
+                newsList.innerHTML = '<div class="text-center text-danger">載入失敗</div>';
+            });
+        }
+
+        // 重新整理函數
+        function refreshTopics() {
+            loadTopics();
+        }
+
+        function refreshWordcloud() {
+            loadWordcloud(currentTopic);
+        }
+
+        function refreshNews() {
+            loadNews(currentTopic);
+        }
+
+        // 顯示/隱藏載入動畫
+        function showLoading(show) {
+            document.querySelector('.loading').style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
