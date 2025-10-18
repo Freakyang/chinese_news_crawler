@@ -17,9 +17,9 @@ app = Flask(__name__)
 # 簡化的爬蟲功能
 def crawl_news(keyword, start_date=None, end_date=None):
     """簡化的新聞爬蟲功能"""
-    print(f"🚀 開始爬取關鍵詞: {keyword}")
+    print(f"[開始] 爬取關鍵詞: {keyword}")
     if start_date and end_date:
-        print(f"📅 日期範圍: {start_date} 到 {end_date}")
+        print(f"[日期] 範圍: {start_date} 到 {end_date}")
     
     # 清除舊資料
     conn = sqlite3.connect('news.db')
@@ -27,7 +27,7 @@ def crawl_news(keyword, start_date=None, end_date=None):
     cursor.execute('DELETE FROM news_article')
     conn.commit()
     conn.close()
-    print("🗑️ 清除舊的新聞資料...")
+    print("[清除] 舊的新聞資料...")
     
     # 根據關鍵詞生成不同的模擬新聞
     news_templates = {
@@ -140,12 +140,12 @@ def crawl_news(keyword, start_date=None, end_date=None):
                 news['topic']
             ))
         except Exception as e:
-            print(f"❌ 儲存新聞失敗: {e}")
+            print(f"[錯誤] 儲存新聞失敗: {e}")
     
     conn.commit()
     conn.close()
     
-    print(f"✅ 成功儲存 {len(mock_news)} 篇新聞到資料庫")
+    print(f"[成功] 儲存 {len(mock_news)} 篇新聞到資料庫")
     return len(mock_news)
 
 # 資料庫初始化
@@ -179,8 +179,8 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print("📊 創建資料庫表...")
-    print("✅ 資料庫表創建完成")
+    print("[資料庫] 創建資料庫表...")
+    print("[資料庫] 資料庫表創建完成")
 
 # 初始化資料庫
 init_db()
@@ -563,7 +563,7 @@ HTML_TEMPLATE = '''
                     </div>
                     
                     <button type="submit" class="crawl-btn">
-                        🚀 開始爬取
+                        [開始] 爬取
                     </button>
                 </form>
             </div>
@@ -622,15 +622,15 @@ HTML_TEMPLATE = '''
                 const result = await response.json();
                 
                 if (result.success) {
-                    showMessage(`✅ 成功爬取 ${result.count} 篇新聞！`, 'success');
+                    showMessage(`[成功] 爬取 ${result.count} 篇新聞！`, 'success');
                     loadStats();
                     loadNews();
                     loadTopics();
                 } else {
-                    showMessage(`❌ 爬取失敗: ${result.message}`, 'error');
+                    showMessage(`[錯誤] 爬取失敗: ${result.message}`, 'error');
                 }
             } catch (error) {
-                showMessage(`❌ 網路錯誤: ${error.message}`, 'error');
+                showMessage(`[錯誤] 網路錯誤: ${error.message}`, 'error');
             }
         });
         
@@ -763,7 +763,7 @@ def api_crawl():
         count = crawl_news(keyword, start_date, end_date)
         return jsonify({'success': True, 'count': count})
     except Exception as e:
-        print(f"❌ 爬取失敗: {e}")
+        print(f"[錯誤] 爬取失敗: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/news')
@@ -826,7 +826,7 @@ def api_topics():
         conn.close()
         return jsonify({'topics': topics, 'keywords': []})
     except Exception as e:
-        print(f"❌ 主題分析失敗: {e}")
+        print(f"[錯誤] 主題分析失敗: {e}")
         return jsonify({'topics': {}, 'keywords': []})
 
 @app.route('/api/wordcloud')
@@ -845,16 +845,16 @@ def api_wordcloud():
         wordcloud_data = None
         return jsonify({'wordcloud': wordcloud_data})
     except Exception as e:
-        print(f"❌ 詞雲生成失敗: {e}")
+        print(f"[錯誤] 詞雲生成失敗: {e}")
         return jsonify({'wordcloud': None})
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("🎉 中文新聞爬蟲與主題分析系統")
+    print("[系統] 中文新聞爬蟲與主題分析系統")
     print("=" * 60)
     print("正在初始化應用程式...")
-    print("🚀 Flask 應用程式啟動中...")
-    print("🌐 請訪問: http://localhost:5000")
-    print("⏹️  按 Ctrl+C 停止應用程式")
+    print("[啟動] Flask 應用程式啟動中...")
+    print("[網址] 請訪問: http://localhost:5000")
+    print("[停止] 按 Ctrl+C 停止應用程式")
     print("=" * 60)
     app.run(host='0.0.0.0', port=5000, debug=True)
