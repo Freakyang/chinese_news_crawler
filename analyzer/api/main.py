@@ -10,7 +10,7 @@ news_data = []
 # 簡化的爬蟲功能
 def crawl_news(keyword):
     """簡化的新聞爬蟲功能"""
-    print(f"🚀 開始爬取關鍵詞: {keyword}")
+    print(f"[開始] 爬取關鍵詞: {keyword}")
     
     # 模擬新聞數據
     mock_news = [
@@ -60,7 +60,7 @@ def crawl_news(keyword):
     global news_data
     news_data = mock_news
     
-    print(f"✅ 成功儲存 {len(mock_news)} 篇新聞")
+    print(f"[成功] 儲存 {len(mock_news)} 篇新聞")
     return len(mock_news)
 
 # HTML 模板
@@ -303,22 +303,22 @@ HTML_TEMPLATE = '''
 <body>
     <div class="container">
         <div class="header">
-            <h1>📰 中文新聞爬蟲與主題分析系統</h1>
+            <h1>[新聞] 中文新聞爬蟲與主題分析系統</h1>
             <p>即時搜尋、分析與視覺化中文新聞內容</p>
         </div>
         
         <div class="search-section">
             <form class="search-form" id="searchForm">
                 <input type="text" class="search-input" id="keywordInput" placeholder="請輸入搜尋關鍵詞，例如：台灣、科技、政治..." required>
-                <button type="submit" class="search-btn">🔍 開始搜尋</button>
+                <button type="submit" class="search-btn">[搜尋] 開始搜尋</button>
             </form>
         </div>
         
         <div class="tabs">
-            <div class="tab active" data-tab="news">📰 新聞列表</div>
-            <div class="tab" data-tab="topics">📊 主題分析</div>
-            <div class="tab" data-tab="wordcloud">☁️ 詞雲圖</div>
-            <div class="tab" data-tab="stats">📈 統計數據</div>
+            <div class="tab active" data-tab="news">[新聞] 新聞列表</div>
+            <div class="tab" data-tab="topics">[分析] 主題分析</div>
+            <div class="tab" data-tab="wordcloud">[詞雲] 詞雲圖</div>
+            <div class="tab" data-tab="stats">[統計] 統計數據</div>
         </div>
         
         <div class="content">
@@ -404,13 +404,13 @@ HTML_TEMPLATE = '''
                 const result = await response.json();
                 
                 if (result.success) {
-                    showMessage(`✅ 成功爬取 ${result.count} 篇新聞！`, 'success');
+                    showMessage(`[成功] 爬取 ${result.count} 篇新聞！`, 'success');
                     loadNews();
                 } else {
-                    showMessage(`❌ 爬取失敗: ${result.message}`, 'error');
+                    showMessage(`[錯誤] 爬取失敗: ${result.message}`, 'error');
                 }
             } catch (error) {
-                showMessage(`❌ 網路錯誤: ${error.message}`, 'error');
+                showMessage(`[錯誤] 網路錯誤: ${error.message}`, 'error');
             }
         });
         
@@ -547,7 +547,7 @@ def api_crawl():
         count = crawl_news(keyword)
         return jsonify({'success': True, 'count': count})
     except Exception as e:
-        print(f"❌ 爬取失敗: {e}")
+        print(f"[錯誤] 爬取失敗: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/news')
@@ -555,7 +555,7 @@ def api_news():
     try:
         return jsonify({'news': news_data})
     except Exception as e:
-        print(f"❌ 載入新聞失敗: {e}")
+        print(f"[錯誤] 載入新聞失敗: {e}")
         return jsonify({'news': []})
 
 @app.route('/api/stats')
@@ -571,7 +571,7 @@ def api_stats():
             'total_sources': len(sources)
         })
     except Exception as e:
-        print(f"❌ 載入統計失敗: {e}")
+        print(f"[錯誤] 載入統計失敗: {e}")
         return jsonify({
             'total_news': 0,
             'total_topics': 0,
@@ -588,7 +588,7 @@ def api_topics():
         
         return jsonify({'topics': topics, 'keywords': []})
     except Exception as e:
-        print(f"❌ 主題分析失敗: {e}")
+        print(f"[錯誤] 主題分析失敗: {e}")
         return jsonify({'topics': {}, 'keywords': []})
 
 @app.route('/api/wordcloud')
@@ -598,7 +598,7 @@ def api_wordcloud():
         wordcloud_data = None
         return jsonify({'wordcloud': wordcloud_data})
     except Exception as e:
-        print(f"❌ 詞雲生成失敗: {e}")
+        print(f"[錯誤] 詞雲生成失敗: {e}")
         return jsonify({'wordcloud': None})
 
 # Vercel 無伺服器函數處理器
